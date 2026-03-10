@@ -1,0 +1,294 @@
+# 📐 Architectural Atlas
+## Platform Partners — ServiceTitan Data Platform
+
+> **Purpose:** This document provides a complete visual map of the Data Platform. It is structured from a high-level executive overview down to technical implementation detail. It serves as the single source of truth for understanding, maintaining, and replicating the platform.
+
+---
+
+## 1. 🗺️ High-Level System Overview
+
+This is the "30,000 ft view" — the entire platform in one diagram.
+
+```mermaid
+graph TD
+    subgraph SOURCES["📡 DATA SOURCES"]
+        ST["🔧 ServiceTitan\n(Field Operations SaaS)"]
+        FV["🔗 Fivetran\n(Managed Connector)"]
+    end
+
+    subgraph INGESTION["⚙️ INGESTION LAYER"]
+        ETL["🚀 Custom ETL\nCloud Run Jobs"]
+        FV_BQ["📥 Fivetran → BigQuery\n(Direct Sync)"]
+    end
+
+    subgraph STORAGE["🏗️ DATA LAKE — BigQuery (per Tenant)"]
+        BZ["🥉 Bronze Dataset\n(Raw Data)"]
+        SV["🥈 Silver Dataset\n(Transformed Views)"]
+        DB["🖥️ Dashboards Dataset\n(Business Views)"]
+    end
+
+    subgraph ANALYTICS["📊 ANALYTICS & CONSUMPTION"]
+        DF["⚙️ Dataform\n(SQL Transformations)"]
+        GS["📋 Google Sheets\n(Operational Reports)"]
+        LS["📈 Looker Studio\n(Executive Dashboards)"]
+        PY["🧠 Python / Streamlit\n(Predictive Analytics)"]
+    end
+
+    subgraph MGMT["🛠️ PLATFORM MANAGEMENT (Central)"]
+        GCA["☁️ GCloud Automation\n(IaC Scripts)"]
+        MON["🔍 Monitoring\n(ETL Health Dashboard)"]
+        CFG["⚙️ Settings & Config\n(Multi-Tenant Registry)"]
+    end
+
+    ST --> ETL
+    ST --> FV --> FV_BQ
+    ETL --> BZ
+    FV_BQ --> BZ
+    BZ --> SV
+    SV --> DF --> DB
+    DB --> GS
+    DB --> LS
+    BZ --> PY
+    SV --> PY
+
+    GCA --> STORAGE
+    CFG --> ETL
+    MON --> ETL
+```
+
+---
+
+## 2. ⚙️ ETL Deep-Dive: Data Extraction Pipeline
+
+This diagram shows the exact internal orchestration of the custom ETL process from source API to BigQuery.
+
+```mermaid
+sequenceDiagram
+    participant SCH as ☁️ Cloud Scheduler
+    participant ORC as 🎯 Cloud Function<br/>(Orchestrator)
+    participant J1 as 🚀 Cloud Run Job #1<br/>(st2json)
+    participant J2 as 🔄 Cloud Run Job #2<br/>(json2bq)
+    participant ST as 🔧 ServiceTitan API
+    participant GCS as 🪣 Cloud Storage<br/>(GCS Bucket)
+    participant BQ as 🗄️ BigQuery<br/>(Bronze Dataset)
+
+    SCH->>ORC: Trigger (every 6h)
+    ORC->>J1: Execute Job #1
+    loop For each Tenant (Company)
+        J1->>ST: GET /api/endpoint?page=N
+        ST-->>J1: JSON Response (paginated)
+        J1->>GCS: Upload JSON file
+    end
+    J1-->>ORC: ✅ Completed
+    ORC->>J2: Execute Job #2
+    loop For each JSON file in GCS
+        J2->>GCS: Download JSON
+        J2->>J2: Transform → JSONL + snake_case
+        J2->>BQ: MERGE into Bronze Table
+    end
+    J2-->>ORC: ✅ Completed
+    ORC-->>SCH: 200 OK
+```
+
+**Key behaviors:**
+- 🔁 **Incremental MERGE:** Only inserts/updates changed records, never full reloads
+- 🏷️ **Audit Fields:** Every record gets `_etl_synced` (timestamp) and `_etl_operation` (INSERT/UPDATE/DELETE)
+- 🧹 **Soft Delete:** Deleted records are flagged, never physically removed
+
+---
+
+## 3. 🏢 Multi-Tenant Architecture
+
+Each client company is a fully isolated tenant with its own GCP project and BigQuery datasets.
+
+```mermaid
+graph LR
+    subgraph CENTRAL["🧠 Central Management Project\n(pph-central)"]
+        META["📋 metadata_consolidated_tables\n(Endpoint Registry)"]
+        LOGS["📜 ETL Logs\n(Cross-Tenant Monitoring)"]
+        SA["🔑 Service Accounts\n(etl-servicetitan@...)"]
+    end
+
+    subgraph T1["🏠 Tenant A\n(shape-mhs-1)"]
+        BZ1["Bronze Dataset"]
+        SV1["Silver Dataset"]
+        DB1["Dashboards Dataset"]
+    end
+
+    subgraph T2["🏠 Tenant B\n(pph-inbox)"]
+        BZ2["Bronze Dataset"]
+        SV2["Silver Dataset"]
+        DB2["Dashboards Dataset"]
+    end
+
+    subgraph TN["🏠 Tenant N\n(...)"]
+        BZN["Bronze Dataset"]
+        SVN["Silver Dataset"]
+        DBN["Dashboards Dataset"]
+    end
+
+    META --> T1
+    META --> T2
+    META --> TN
+    SA --> T1
+    SA --> T2
+    SA --> TN
+    LOGS -.->|monitors| T1
+    LOGS -.->|monitors| T2
+    LOGS -.->|monitors| TN
+```
+
+> [!IMPORTANT]
+> The `pph-central` project is the control tower. All automation, IAM policies, and metadata configurations are managed from here and pushed out to each tenant project.
+
+---
+
+## 4. 🌎 Multi-Environment (SDLC) Structure
+
+Changes flow through 3 environments before reaching clients, ensuring stability.
+
+```mermaid
+graph LR
+    DEV["🔧 DES\nDevelopment\nplatform-partners-des\n\nFree to break things"]
+    QUA["🧪 QUA\nQuality / Staging\nplatform-partners-qua\n\nValidation before prod"]
+    PRO["🚀 PRO\nProduction\nconstant-height-455614-i0\n\nLive clients"]
+
+    DEV -- "build_deploy.sh des" --> QUA
+    QUA -- "build_deploy.sh pro" --> PRO
+
+    style DEV fill:#4a9eff,color:#fff
+    style QUA fill:#f0a500,color:#fff
+    style PRO fill:#2ecc71,color:#fff
+```
+
+**Deployment automation:** Each environment has its own Cloud Run Jobs, schedulers, and service accounts. Promotion between environments is a single shell command (`build_deploy.sh [env]`).
+
+---
+
+## 5. 🗄️ Data Layer Architecture (Medallion)
+
+Data quality and readiness increases as it moves through each layer.
+
+```mermaid
+graph TD
+    subgraph BZ["🥉 BRONZE — Raw Ingestion"]
+        BR1["📄 Raw tables from ServiceTitan API\ne.g. timesheet, technician, campaign..."]
+        BR2["🏷️ + audit fields: _etl_synced, _etl_operation"]
+    end
+
+    subgraph SV["🥈 SILVER — Business Transformations"]
+        SV1["🔗 Joined & enriched views\ne.g. vw_dailytracker_timestamp_base"]
+        SV2["📐 Business logic applied\n(timezone conversion, overtime rules...)"]
+    end
+
+    subgraph DB["🖥️ DASHBOARDS — Consumption Ready"]
+        DB1["📊 LTM Views (Last 12 Months KPIs)"]
+        DB2["📈 PULSE Views (Operational Metrics)"]
+        DB3["📅 Daily Tracker Views (Payroll & Hours)"]
+    end
+
+    subgraph FV["🔗 FIVETRAN — Parallel Raw Layer"]
+        FV1["Tables synced directly\ne.g. estimates, invoices, jobs..."]
+    end
+
+    BZ --> SV --> DB
+    FV --> SV
+    FV --> DB
+```
+
+---
+
+## 6. 🛠️ Platform Management: Automation Capabilities
+
+The platform includes a full suite of automation scripts (Infrastructure as Code) for deploying to new tenants.
+
+```mermaid
+mindmap
+  root((☁️ GCloud Automation))
+    BigQuery
+      Create Datasets
+        bronze
+        silver
+        dashboards
+      Set IAM Permissions
+      Create Authorized Views
+    IAM & Security
+      Service Account Setup
+      Custom Roles
+        pphSheetsAnalyst
+        pphBronzeReader
+      Permission Templates
+    ETL Deployment
+      Build Docker Images
+      Deploy Cloud Run Jobs
+      Configure Schedulers
+    Monitoring
+      ETL Health Dashboard
+      Table Count Alerts
+      Cross-Tenant Log Review
+    Settings
+      Tenant Registry
+      Company Timezone Config
+      Business Unit Mapping
+```
+
+---
+
+## 7. 📊 Analytics & Products Built on the Platform
+
+What do clients actually get? These are the visible outputs.
+
+```mermaid
+graph LR
+    subgraph REPORTS["📊 Operational Reports (Google Sheets)"]
+        LTM["📈 LTM Dashboard\nLast 12 Months KPIs\nRevenue, Jobs, Conversion"]
+        PULSE["⚡ PULSE Dashboard\nReal-time Business Metrics"]
+        DT["📅 Daily Tracker\nEmployee Hours & Payroll"]
+    end
+
+    subgraph ANALYTICS["🧠 Advanced Analytics (Python/Streamlit)"]
+        CALL["📞 Call Temperature Analysis\nLead quality scoring"]
+        PRED["🔮 Predictive Models\nHistorical variability\nDemand forecasting"]
+    end
+
+    subgraph LOOKER["📈 Executive Dashboards (Looker Studio)"]
+        EXEC["📋 Multi-Company Overview"]
+    end
+
+    DB["🖥️ Dashboards Dataset\n(BigQuery)"] --> LTM
+    DB --> PULSE
+    DB --> DT
+    DB --> EXEC
+    BZ["🥉 Bronze Dataset\n(BigQuery)"] --> CALL
+    BZ --> PRED
+```
+
+---
+
+## 8. 🔄 Platform Component Dependency Map
+
+*For maintenance: know what breaks if one component fails.*
+
+```mermaid
+graph TD
+    ST_API["🔧 ServiceTitan API"] -->|"fails → no fresh data"| J1["Cloud Run Job #1\n(st2json)"]
+    J1 -->|"fails → json2bq has nothing"| GCS["GCS Bucket\n(JSON files)"]
+    GCS -->|"files missing → tables not updated"| J2["Cloud Run Job #2\n(json2bq)"]
+    J2 -->|"fails → Bronze stale"| BZ["Bronze Tables\n(BigQuery)"]
+    BZ -->|"stale → Silver stale"| SV["Silver Views\n(Dataform)"]
+    SV -->|"stale → Dashboards stale"| DB["Dashboard Views"]
+    DB -->|"stale → client reports wrong"| GS["Google Sheets\n/ Looker"]
+
+    META["📋 metadata_consolidated_tables"] -->|"missing endpoints → J1 uses fallback"| J1
+    ORC["Cloud Function\n(Orchestrator)"] -->|"timeout → J2 might not trigger"| J2
+
+    style ST_API fill:#e74c3c,color:#fff
+    style GS fill:#2ecc71,color:#fff
+```
+
+> [!WARNING]
+> The highest-risk single point of failure is **Cloud Function timeout**. If the orchestrator times out between Job 1 and Job 2, the pipeline is only half-executed with no automatic recovery. This is addressed in the Technical Debt plan.
+
+---
+
+*Last updated: March 10, 2026 — Platform Partners Data Team*
