@@ -13,7 +13,7 @@ It automatically collects, organizes, and delivers data so that you and your tea
 
 ```mermaid
 graph LR
-    A["🔧 Your Service Operations\n(ServiceTitan)"] --> B["⚙️ Data Platform\n(Automatic)"] --> C["📊 Your Reports & Dashboards\n(Always Current)"]
+    A["🔧 Your Service Operations<br/>(ServiceTitan)"] --> B["⚙️ Data Platform<br/>(Automatic)"] --> C["📊 Your Reports & Dashboards<br/>(Always Current)"]
     style B fill:#4a9eff,color:#fff
 ```
 

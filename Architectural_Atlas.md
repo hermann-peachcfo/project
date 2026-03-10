@@ -12,32 +12,32 @@ This is the "30,000 ft view" — the entire platform in one diagram.
 ```mermaid
 graph TD
     subgraph SOURCES["📡 DATA SOURCES"]
-        ST["🔧 ServiceTitan\n(Field Operations SaaS)"]
-        FV["🔗 Fivetran\n(Managed Connector)"]
+        ST["🔧 ServiceTitan<br/>(Field Operations SaaS)"]
+        FV["🔗 Fivetran<br/>(Managed Connector)"]
     end
 
     subgraph INGESTION["⚙️ INGESTION LAYER"]
-        ETL["🚀 Custom ETL\nCloud Run Jobs"]
-        FV_BQ["📥 Fivetran → BigQuery\n(Direct Sync)"]
+        ETL["🚀 Custom ETL<br/>Cloud Run Jobs"]
+        FV_BQ["📥 Fivetran → BigQuery<br/>(Direct Sync)"]
     end
 
     subgraph STORAGE["🏗️ DATA LAKE — BigQuery (per Tenant)"]
-        BZ["🥉 Bronze Dataset\n(Raw Data)"]
-        SV["🥈 Silver Dataset\n(Transformed Views)"]
-        DB["🖥️ Dashboards Dataset\n(Business Views)"]
+        BZ["🥉 Bronze Dataset<br/>(Raw Data)"]
+        SV["🥈 Silver Dataset<br/>(Transformed Views)"]
+        DB["🖥️ Dashboards Dataset<br/>(Business Views)"]
     end
 
     subgraph ANALYTICS["📊 ANALYTICS & CONSUMPTION"]
-        DF["⚙️ Dataform\n(SQL Transformations)"]
-        GS["📋 Google Sheets\n(Operational Reports)"]
-        LS["📈 Looker Studio\n(Executive Dashboards)"]
-        PY["🧠 Python / Streamlit\n(Predictive Analytics)"]
+        DF["⚙️ Dataform<br/>(SQL Transformations)"]
+        GS["📋 Google Sheets<br/>(Operational Reports)"]
+        LS["📈 Looker Studio<br/>(Executive Dashboards)"]
+        PY["🧠 Python / Streamlit<br/>(Predictive Analytics)"]
     end
 
     subgraph MGMT["🛠️ PLATFORM MANAGEMENT (Central)"]
-        GCA["☁️ GCloud Automation\n(IaC Scripts)"]
-        MON["🔍 Monitoring\n(ETL Health Dashboard)"]
-        CFG["⚙️ Settings & Config\n(Multi-Tenant Registry)"]
+        GCA["☁️ GCloud Automation<br/>(IaC Scripts)"]
+        MON["🔍 Monitoring<br/>(ETL Health Dashboard)"]
+        CFG["⚙️ Settings & Config<br/>(Multi-Tenant Registry)"]
     end
 
     ST --> ETL
@@ -103,25 +103,25 @@ Each client company is a fully isolated tenant with its own GCP project and BigQ
 
 ```mermaid
 graph LR
-    subgraph CENTRAL["🧠 Central Management Project\n(pph-central)"]
-        META["📋 metadata_consolidated_tables\n(Endpoint Registry)"]
-        LOGS["📜 ETL Logs\n(Cross-Tenant Monitoring)"]
-        SA["🔑 Service Accounts\n(etl-servicetitan@...)"]
+    subgraph CENTRAL["🧠 Central Management Project<br/>(pph-central)"]
+        META["📋 metadata_consolidated_tables<br/>(Endpoint Registry)"]
+        LOGS["📜 ETL Logs<br/>(Cross-Tenant Monitoring)"]
+        SA["🔑 Service Accounts<br/>(etl-servicetitan@...)"]
     end
 
-    subgraph T1["🏠 Tenant A\n(shape-mhs-1)"]
+    subgraph T1["🏠 Tenant A<br/>(shape-mhs-1)"]
         BZ1["Bronze Dataset"]
         SV1["Silver Dataset"]
         DB1["Dashboards Dataset"]
     end
 
-    subgraph T2["🏠 Tenant B\n(pph-inbox)"]
+    subgraph T2["🏠 Tenant B<br/>(pph-inbox)"]
         BZ2["Bronze Dataset"]
         SV2["Silver Dataset"]
         DB2["Dashboards Dataset"]
     end
 
-    subgraph TN["🏠 Tenant N\n(...)"]
+    subgraph TN["🏠 Tenant N<br/>(...)"]
         BZN["Bronze Dataset"]
         SVN["Silver Dataset"]
         DBN["Dashboards Dataset"]
@@ -149,9 +149,9 @@ Changes flow through 3 environments before reaching clients, ensuring stability.
 
 ```mermaid
 graph LR
-    DEV["🔧 DES\nDevelopment\nplatform-partners-des\n\nFree to break things"]
-    QUA["🧪 QUA\nQuality / Staging\nplatform-partners-qua\n\nValidation before prod"]
-    PRO["🚀 PRO\nProduction\nconstant-height-455614-i0\n\nLive clients"]
+    DEV["🔧 DES<br/>Development<br/>platform-partners-des<br/><br/>Free to break things"]
+    QUA["🧪 QUA<br/>Quality / Staging<br/>platform-partners-qua<br/><br/>Validation before prod"]
+    PRO["🚀 PRO<br/>Production<br/>constant-height-455614-i0<br/><br/>Live clients"]
 
     DEV -- "build_deploy.sh des" --> QUA
     QUA -- "build_deploy.sh pro" --> PRO
@@ -172,13 +172,13 @@ Data quality and readiness increases as it moves through each layer.
 ```mermaid
 graph TD
     subgraph BZ["🥉 BRONZE — Raw Ingestion"]
-        BR1["📄 Raw tables from ServiceTitan API\ne.g. timesheet, technician, campaign..."]
+        BR1["📄 Raw tables from ServiceTitan API<br/>e.g. timesheet, technician, campaign..."]
         BR2["🏷️ + audit fields: _etl_synced, _etl_operation"]
     end
 
     subgraph SV["🥈 SILVER — Business Transformations"]
-        SV1["🔗 Joined & enriched views\ne.g. vw_dailytracker_timestamp_base"]
-        SV2["📐 Business logic applied\n(timezone conversion, overtime rules...)"]
+        SV1["🔗 Joined & enriched views<br/>e.g. vw_dailytracker_timestamp_base"]
+        SV2["📐 Business logic applied<br/>(timezone conversion, overtime rules...)"]
     end
 
     subgraph DB["🖥️ DASHBOARDS — Consumption Ready"]
@@ -188,7 +188,7 @@ graph TD
     end
 
     subgraph FV["🔗 FIVETRAN — Parallel Raw Layer"]
-        FV1["Tables synced directly\ne.g. estimates, invoices, jobs..."]
+        FV1["Tables synced directly<br/>e.g. estimates, invoices, jobs..."]
     end
 
     BZ --> SV --> DB
@@ -241,25 +241,25 @@ What do clients actually get? These are the visible outputs.
 ```mermaid
 graph LR
     subgraph REPORTS["📊 Operational Reports (Google Sheets)"]
-        LTM["📈 LTM Dashboard\nLast 12 Months KPIs\nRevenue, Jobs, Conversion"]
-        PULSE["⚡ PULSE Dashboard\nReal-time Business Metrics"]
-        DT["📅 Daily Tracker\nEmployee Hours & Payroll"]
+        LTM["📈 LTM Dashboard<br/>Last 12 Months KPIs<br/>Revenue, Jobs, Conversion"]
+        PULSE["⚡ PULSE Dashboard<br/>Real-time Business Metrics"]
+        DT["📅 Daily Tracker<br/>Employee Hours & Payroll"]
     end
 
     subgraph ANALYTICS["🧠 Advanced Analytics (Python/Streamlit)"]
-        CALL["📞 Call Temperature Analysis\nLead quality scoring"]
-        PRED["🔮 Predictive Models\nHistorical variability\nDemand forecasting"]
+        CALL["📞 Call Temperature Analysis<br/>Lead quality scoring"]
+        PRED["🔮 Predictive Models<br/>Historical variability<br/>Demand forecasting"]
     end
 
     subgraph LOOKER["📈 Executive Dashboards (Looker Studio)"]
         EXEC["📋 Multi-Company Overview"]
     end
 
-    DB["🖥️ Dashboards Dataset\n(BigQuery)"] --> LTM
+    DB["🖥️ Dashboards Dataset<br/>(BigQuery)"] --> LTM
     DB --> PULSE
     DB --> DT
     DB --> EXEC
-    BZ["🥉 Bronze Dataset\n(BigQuery)"] --> CALL
+    BZ["🥉 Bronze Dataset<br/>(BigQuery)"] --> CALL
     BZ --> PRED
 ```
 
@@ -271,16 +271,16 @@ graph LR
 
 ```mermaid
 graph TD
-    ST_API["🔧 ServiceTitan API"] -->|"fails → no fresh data"| J1["Cloud Run Job #1\n(st2json)"]
-    J1 -->|"fails → json2bq has nothing"| GCS["GCS Bucket\n(JSON files)"]
-    GCS -->|"files missing → tables not updated"| J2["Cloud Run Job #2\n(json2bq)"]
-    J2 -->|"fails → Bronze stale"| BZ["Bronze Tables\n(BigQuery)"]
-    BZ -->|"stale → Silver stale"| SV["Silver Views\n(Dataform)"]
+    ST_API["🔧 ServiceTitan API"] -->|"fails → no fresh data"| J1["Cloud Run Job #1<br/>(st2json)"]
+    J1 -->|"fails → json2bq has nothing"| GCS["GCS Bucket<br/>(JSON files)"]
+    GCS -->|"files missing → tables not updated"| J2["Cloud Run Job #2<br/>(json2bq)"]
+    J2 -->|"fails → Bronze stale"| BZ["Bronze Tables<br/>(BigQuery)"]
+    BZ -->|"stale → Silver stale"| SV["Silver Views<br/>(Dataform)"]
     SV -->|"stale → Dashboards stale"| DB["Dashboard Views"]
-    DB -->|"stale → client reports wrong"| GS["Google Sheets\n/ Looker"]
+    DB -->|"stale → client reports wrong"| GS["Google Sheets<br/>/ Looker"]
 
     META["📋 metadata_consolidated_tables"] -->|"missing endpoints → J1 uses fallback"| J1
-    ORC["Cloud Function\n(Orchestrator)"] -->|"timeout → J2 might not trigger"| J2
+    ORC["Cloud Function<br/>(Orchestrator)"] -->|"timeout → J2 might not trigger"| J2
 
     style ST_API fill:#e74c3c,color:#fff
     style GS fill:#2ecc71,color:#fff

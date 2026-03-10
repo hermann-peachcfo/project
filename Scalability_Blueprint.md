@@ -12,16 +12,16 @@ Before starting, verify the following prerequisites.
 ```mermaid
 graph TD
     START["🆕 New Company to Add?"] --> Q1{"Uses ServiceTitan?"}
-    Q1 -->|Yes| Q2{"Has a dedicated\nGCP Project?"}
-    Q1 -->|No| ALT["⚠️ Requires a custom integration\n(contact the data team)"]
-    Q2 -->|Yes| Q3{"Service Account\navailable?"}
-    Q2 -->|No| GCPNEW["📋 Create GCP Project\n(Step 0 of onboarding)"]
+    Q1 -->|Yes| Q2{"Has a dedicated<br/>GCP Project?"}
+    Q1 -->|No| ALT["⚠️ Requires a custom integration<br/>(contact the data team)"]
+    Q2 -->|Yes| Q3{"Service Account<br/>available?"}
+    Q2 -->|No| GCPNEW["📋 Create GCP Project<br/>(Step 0 of onboarding)"]
     GCPNEW --> Q3
-    Q3 -->|Yes| Q4{"ServiceTitan API\ncredentials available?"}
-    Q3 -->|No| SANEW["🔑 Create etl-servicetitan\nService Account"]
+    Q3 -->|Yes| Q4{"ServiceTitan API<br/>credentials available?"}
+    Q3 -->|No| SANEW["🔑 Create etl-servicetitan<br/>Service Account"]
     SANEW --> Q4
-    Q4 -->|Yes| READY["✅ READY\nEstimated setup time: 2–4 hours"]
-    Q4 -->|No| STCRED["📞 Request API keys\nfrom ServiceTitan"]
+    Q4 -->|Yes| READY["✅ READY<br/>Estimated setup time: 2–4 hours"]
+    Q4 -->|No| STCRED["📞 Request API keys<br/>from ServiceTitan"]
     STCRED --> READY
 ```
 
